@@ -8,6 +8,8 @@ add_executable(ucontext_test2 main.c
         context.h
         ring.c
         ring.h
+        utils.c
+        utils.h
 )
 
 target_link_libraries(ucontext_test2 PRIVATE -luring)
