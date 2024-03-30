@@ -1,21 +1,69 @@
 #include <stdio.h>
 #include "context.h"
+#include "ring.h"
+#include "utils.h"
 
-void worker(coroutine_t *coroutine, void *user_data)
+typedef struct task_s {
+    coroutine_t *coroutine;
+    int result;
+} task_t;
+
+void ring_coroutine_cb(void *data, int result)
 {
-    printf("worker ID: %p\n", user_data);
-    coroutine_yield(coroutine);
-    printf("%p after yield\n", user_data);
+    ring_handle_t *handle = (ring_handle_t*) data;
+
+    task_t *task = (task_t*) handle->user_data;
+
+    task->result = result;
+
+    coroutine_enter(task->coroutine);
+}
+
+int ring_listener_accept_await(ring_listener_t *listener)
+{
+    task_t task = {
+            .coroutine = coroutine_current_context(),
+            .result = 0
+    };
+
+    listener->handle.user_data = (void*) &task;
+
+    ring_listener_start(listener, (listener_cb) ring_coroutine_cb);
+    coroutine_yield(coroutine_current_context());
+
+    ring_listener_stop(listener);
+
+    return task.result;
+}
+
+void server_main(coroutine_t *context, void *args)
+{
+    int server_fd = make_server(8080);
+
+    ring_listener_t listener;
+
+    ring_listener_init(&listener, args, server_fd);
+
+    for (;;) {
+        int client_fd = ring_listener_accept_await(&listener);
+
+        printf("New incoming connection: %d\n", client_fd);
+    }
 }
 
 int main()
 {
-    coroutine_t coroutine1, coroutine2;
+    ring_loop_t loop;
 
-    coroutine_spawn(&coroutine1, worker, (void*) 1);
-    coroutine_spawn(&coroutine2, worker, (void*) 2);
-    coroutine_enter(&coroutine2);
-    coroutine_enter(&coroutine1);
-    coroutine_enter(&coroutine2);
+    ring_loop_init(&loop, 4096);
+
+    coroutine_t server;
+
+    coroutine_spawn(&server, server_main, &loop);
+    coroutine_enter(&server);
+
+    ring_loop_submit(&loop);
+    ring_loop_run(&loop);
+
     return 0;
 }
