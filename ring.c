@@ -196,9 +196,9 @@ void ring_tcp_receive(ring_tcp_t* handle, char* buffer, size_t size, tcp_cb cb) 
     return ring_tcp_prepare_sqe(handle, buffer, size, RING_OP_READ);
 }
 
-void ring_tcp_send(ring_tcp_t* handle, char* buffer, size_t size, tcp_cb cb) {
+void ring_tcp_send(ring_tcp_t* handle, const char* buffer, size_t size, tcp_cb cb) {
     handle->cb = cb;
-    return ring_tcp_prepare_sqe(handle, buffer, size, RING_OP_WRITE);
+    return ring_tcp_prepare_sqe(handle, (char*)buffer, size, RING_OP_WRITE);
 }
 
 void ring_tcp_connect_v4(ring_tcp_t* handle, struct sockaddr_in* address, tcp_cb cb) {

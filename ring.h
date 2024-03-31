@@ -79,7 +79,7 @@ void ring_file_read(ring_file_t* handle, char* buffer, size_t size, size_t offse
 void ring_tcp_init(ring_tcp_t* handle, ring_loop_t* loop, int fd);
 void ring_tcp_connect_v4(ring_tcp_t* handle, struct sockaddr_in* address, tcp_cb cb);
 void ring_tcp_receive(ring_tcp_t* handle, char* buffer, size_t size, tcp_cb cb);
-void ring_tcp_send(ring_tcp_t* handle, char* buffer, size_t size, tcp_cb cb);
+void ring_tcp_send(ring_tcp_t* handle, const char* buffer, size_t size, tcp_cb cb);
 void ring_tcp_close(ring_tcp_t* handle, tcp_cb cb);
 
 void ring_loop_submit(ring_loop_t* loop);

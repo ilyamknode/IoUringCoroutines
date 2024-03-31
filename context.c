@@ -4,6 +4,7 @@
 #define DEFAULT_STACK_SIZE (1024 * 256)
 
 static __thread ucontext_t main_context = {0};
+static __thread coroutine_t *current_context = NULL;
 
 static void* alloc_stack(size_t size)
 {
@@ -39,10 +40,18 @@ void coroutine_spawn(coroutine_t *coroutine, coroutine_entry_point entry, void *
 
 void coroutine_enter(coroutine_t *coroutine)
 {
+    current_context = coroutine;
     swapcontext(&main_context, &coroutine->context);
 }
 
 void coroutine_yield(coroutine_t *coroutine)
 {
+    current_context = NULL;
+
     swapcontext(&coroutine->context, &main_context);
+}
+
+coroutine_t* coroutine_current_context()
+{
+    return current_context;
 }

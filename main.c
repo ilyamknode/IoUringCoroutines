@@ -36,9 +36,49 @@ int ring_listener_accept_await(ring_listener_t *listener)
     return task.result;
 }
 
+int ring_tcp_send_await(ring_tcp_t *handle, const char *buffer, size_t size)
+{
+    task_t task = {
+            .coroutine = coroutine_current_context(),
+            .result = 0
+    };
+
+    handle->handle.user_data = (void*) &task;
+
+    ring_tcp_send(handle, buffer, size, (tcp_cb) ring_coroutine_cb);
+    coroutine_yield(coroutine_current_context());
+
+    return task.result;
+}
+
+int ring_tcp_receive_await(ring_tcp_t *handle, char *buffer, size_t size)
+{
+    task_t task = {
+            .coroutine = coroutine_current_context(),
+            .result = 0
+    };
+
+    handle->handle.user_data = (void*) &task;
+
+    ring_tcp_receive(handle, buffer, size, (tcp_cb) ring_coroutine_cb);
+    coroutine_yield(task.coroutine);
+
+    return task.result;
+}
+
+void worker(coroutine_t *context, void *args)
+{
+    ring_tcp_t *stream = (ring_tcp_t*) args;
+    char buffer[512];
+
+    int received = ring_tcp_receive_await(stream, buffer, 512);
+
+    printf("%d received!\n", received);
+}
+
 void server_main(coroutine_t *context, void *args)
 {
-    int server_fd = make_server(8080);
+    int server_fd = make_server(8090);
 
     ring_listener_t listener;
 
@@ -47,7 +87,11 @@ void server_main(coroutine_t *context, void *args)
     for (;;) {
         int client_fd = ring_listener_accept_await(&listener);
 
-        printf("New incoming connection: %d\n", client_fd);
+        coroutine_t *new_coroutine = (coroutine_t*) malloc(sizeof(coroutine_t));
+        ring_tcp_t *tcp = (ring_tcp_t*) malloc(sizeof(ring_tcp_t));
+        ring_tcp_init(tcp, args, client_fd);
+
+        coroutine_spawn(new_coroutine, worker, tcp);
     }
 }
 

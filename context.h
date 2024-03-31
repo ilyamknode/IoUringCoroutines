@@ -19,5 +19,6 @@ typedef void(*coroutine_entry_point)(coroutine_t*, void*);
 void coroutine_spawn(coroutine_t *coroutine, coroutine_entry_point entry, void *user_data);
 void coroutine_enter(coroutine_t *coroutine);
 void coroutine_yield(coroutine_t *coroutine);
+coroutine_t* coroutine_current_context();
 
 #endif //UCONTEXT_TEST2_CONTEXT_H
