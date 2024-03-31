@@ -16,4 +16,7 @@ typedef struct task_s {
 int ring_tcp_send_await(ring_tcp_t *handle, const char *buffer, size_t size);
 int ring_tcp_receive_await(ring_tcp_t *handle, char *buffer, size_t size);
 
+int ring_file_read_await(ring_file_t *handle, char *buffer, size_t size, size_t offset);
+int ring_file_write_await(ring_file_t *handle, const char *buffer, size_t size, size_t offset);
+
 #endif //UCONTEXT_TEST2_ASYNC_H
