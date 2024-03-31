@@ -34,22 +34,16 @@ int make_server(uint16_t port)
     return fd;
 }
 
-union ipv4_u {
-    char addr[4];
-    uint32_t ip;
-};
-
 int endpoint_to_string(struct sockaddr_in *address, char *buffer, int size)
 {
-    uint32_t ipv4 = address->sin_addr.s_addr;
-    union ipv4_u ip = { .ip = ipv4 };
+    uint32_t ipv4 = htonl(address->sin_addr.s_addr);
 
     return snprintf(buffer,
              size,
-             "%d.%d.%d.%d:%d",
-             ip.addr[0],
-             ip.addr[1],
-             ip.addr[2],
-             ip.addr[3],
+             "%u.%u.%u.%u:%d",
+             (ipv4 >> 24) & 0xFF,
+             (ipv4 >> 16) & 0xFF,
+             (ipv4 >> 8) & 0xFF,
+             ipv4 & 0xFF,
              address->sin_port);
 }
