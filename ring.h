@@ -86,6 +86,7 @@ void ring_loop_submit(ring_loop_t* loop);
 int ring_loop_wait(ring_loop_t* loop);
 int ring_loop_wait_for_cqes(ring_loop_t* loop);
 int ring_loop_run(ring_loop_t* loop);
+int ring_loop_run_with_prepare(ring_loop_t* loop, void(*prepare_cb)());
 void ring_loop_close(ring_loop_t* loop);
 
 #endif

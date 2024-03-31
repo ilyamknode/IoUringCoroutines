@@ -48,7 +48,7 @@ void coroutine_yield(coroutine_t *coroutine)
 {
     current_context = NULL;
 
-    swapcontext(&coroutine->context, &main_context);
+    swapcontext(&coroutine->context, coroutine->context.uc_link);
 }
 
 coroutine_t* coroutine_current_context()

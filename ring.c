@@ -273,6 +273,25 @@ int ring_loop_run(ring_loop_t* loop) {
     return 0;
 }
 
+int ring_loop_run_with_prepare(ring_loop_t* loop, void(*prepare_cb)()) {
+    prepare_cb();
+
+    ring_loop_submit(loop);
+
+    while (loop->pending > 0) {
+        prepare_cb();
+        int res = ring_loop_wait_for_cqes(loop);
+
+        if (res < 0) {
+            return res;
+        }
+
+        ring_loop_submit(loop);
+    }
+
+    return 0;
+}
+
 void ring_loop_close(ring_loop_t* loop) {
     io_uring_queue_exit(&loop->ring);
 }
