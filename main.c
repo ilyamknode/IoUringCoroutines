@@ -7,6 +7,7 @@
 
 #define SERVER_PORT 8080
 #define IORING_QUEUE_SIZE 4096
+#define FILE_BUFFER 2048
 #define HOST_FILE "assets/test.txt"
 
 executor_t g_executor = {0};
@@ -19,7 +20,11 @@ void main_worker(coroutine_t *context, void *args)
 
     int result = ring_tcp_receive_await(tcp, buffer, 512);
 
-    printf("Received: %d\n", result);
+    if (result < 0) {
+        close(tcp->fd);
+        free(tcp);
+        return;
+    }
 
     const char *send_text = "HTTP/1.1 200 OK\r\n"
                          "Host: localhost\r\n"
@@ -42,29 +47,47 @@ void main_worker(coroutine_t *context, void *args)
     ring_file_t file;
     ring_file_init(&file, tcp->handle.loop, file_fd);
 
-    char *file_buffer = (char*)malloc(file_sz);
+    char file_buffer[FILE_BUFFER];
 
-    result = ring_file_read_await(&file, file_buffer, file_sz, 0);
+    size_t sent = 0;
 
-    if (result < 0) {
-        close(file_fd);
-        close(tcp->fd);
-        free(file_buffer);
-    } else {
+    while (sent < file_sz) {
+        result = ring_file_read_await(&file, file_buffer, FILE_BUFFER, sent);
+
+        if (result < 0) {
+            perror("read");
+            exit(0);
+        }
+
         result = ring_tcp_send_await(tcp, file_buffer, result);
-        printf("Sent: %d\n", result);
 
-        close(file_fd);
-        close(tcp->fd);
-        free(file_buffer);
+        if (result < 0) {
+            break;
+        }
+
+        sent += result;
     }
 
+    close(file.fd);
+    close(tcp->fd);
     free(tcp);
 }
 
 void new_connection_cb(ring_listener_t *listener, int result)
 {
-    printf("New connection: %d\n", result);
+    if (result < 0) {
+        perror("accept");
+        exit(0);
+    }
+
+    char address_buffer[32];
+    struct sockaddr_in address = {0};
+    socklen_t address_sz = sizeof(struct sockaddr_in);
+
+    getpeername(result, (struct sockaddr*)&address, &address_sz);
+
+    endpoint_to_string(&address, address_buffer, 32);
+    printf("New connection: %s\n", address_buffer);
 
     ring_tcp_t *tcp = (ring_tcp_t*) malloc(sizeof(ring_tcp_t));
     ring_tcp_init(tcp, listener->handle.loop, result);
