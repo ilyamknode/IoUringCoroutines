@@ -55,3 +55,8 @@ coroutine_t* coroutine_current_context()
 {
     return current_context;
 }
+
+void coroutine_free(coroutine_t *coroutine)
+{
+    munmap(coroutine->context.uc_stack.ss_sp, coroutine->context.uc_stack.ss_size);
+}
