@@ -16,13 +16,20 @@ void main_worker(coroutine_t *context, void *args)
 
     char buffer[512];
 
-    int result = ring_tcp_receive_await(tcp, buffer, 128);
+    int result = ring_tcp_receive_await(tcp, buffer, 512);
 
-    printf("result: %d\n", result);
+    printf("Received: %d\n", result);
 
-    result = ring_tcp_receive_await(tcp, buffer, 128);
+    const char *send_text = "HTTP/1.1 200 OK\r\n"
+                         "Host: localhost\r\n"
+                         "Content-Length: 4\r\n"
+                         "Connection: close\r\n"
+                         "\r\n"
+                         "test";
 
-    printf("result: %d\n", result);
+    const size_t send_text_sz = strlen(send_text);
+
+    ring_tcp_send_await(tcp, send_text, send_text_sz);
 }
 
 void new_connection_cb(ring_listener_t *listener, int result)
